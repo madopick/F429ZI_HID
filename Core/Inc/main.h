@@ -28,35 +28,69 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+#include <stdio.h>
+#include <string.h>
+
 
 /* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
-/* USER CODE BEGIN ET */
 
-/* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
-/* USER CODE BEGIN EC */
 
-/* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
-/* USER CODE BEGIN EM */
 
-/* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
+void uartProcessing (uint8_t *u8p_buffer, uint16_t u16_size);
 
-/* USER CODE BEGIN EFP */
-
-/* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define RX_EVENT_CB
+#define UART_BUF_SZ                                 (512)
+
+/* BIT FLAG */
+#define BFLAG_UART_RCV                              (1 << 0)
+#define BFLAG_I2CM_RD                               (1 << 1)
+#define BFLAG_I2CM_WR                               (1 << 2)
+#define BFLAG_I2CS_RD                               (1 << 3)
+#define BFLAG_I2CS_WR                               (1 << 4)
+#define BFLAG_BTN                                   (1 << 5)
+#define BFLAG_RD1                                   (1 << 6)
+#define BFLAG_RD2                                   (1 << 7)
+#define BFLAG_RD3                                   (1 << 8)
+#define BFLAG_WR1                                   (1 << 9)
+#define BFLAG_WR2                                   (1 << 10)
+#define BFLAG_WR3                                   (1 << 11)
+#define BFLAG_RDA                                   (1 << 12)
+#define BFLAG_BUFFCOM                               (1 << 13)
+#define BFLAG_SPI_SLAVE_WR                          (1 << 14)
+#define BFLAG_SPI_SLAVE_RD                          (1 << 15)
+
+
+
+///Header Request
+typedef enum
+{
+    MSG_HEADER = 0,
+    CF1_HEADER,
+    CF2_HEADER,
+    CF3_HEADER,
+    CFA_HEADER,
+    RD1_HEADER,
+    RD2_HEADER,
+    RD3_HEADER,
+    RD4_HEADER,
+    RDALL_HEADER,
+} eREQ_HEADER_t;
+
+
+
+
 #define USER_Btn_Pin GPIO_PIN_13
 #define USER_Btn_GPIO_Port GPIOC
 #define MCO_Pin GPIO_PIN_0

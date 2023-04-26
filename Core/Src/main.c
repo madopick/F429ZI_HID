@@ -29,7 +29,7 @@
 /* Private macro -------------------------------------------------------------*/
 
 
-/* Global variables --------------------------------------------------------_-*/
+/* Global variables ----------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 DMA_HandleTypeDef hdma_i2c1_rx;
 DMA_HandleTypeDef hdma_i2c1_tx;
@@ -50,7 +50,7 @@ static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART3_UART_Init(void);
 static void vuart_handle(uint16_t Size);
-
+static void uartProcessing (uint8_t *u8p_buffer, uint16_t u16_size);
 
 /* Private user code ---------------------------------------------------------*/
 
@@ -136,13 +136,30 @@ int main(void)
   printf("Init OK\r\n");
 
   /* Infinite loop */
+
+
+
   while (1)
   {
-    /* USER CODE END WHILE */
-      HAL_Delay(500);
-      HAL_GPIO_TogglePin(GPIOB, LD1_Pin|LD2_Pin|LD3_Pin);
-    /* USER CODE BEGIN 3 */
+      if (bitFlag & BFLAG_UART_RCV)                                                                 //UART Receiving Process.
+      {
+          uartProcessing (u8arr_uartEvent, u16_lenCnt - 2); // remove \r & \n
+          memset(u8arr_uartEvent, 0, UART_BUF_SZ);
+          u16_lenCnt = 0;
+
+          bitFlag   &= ~BFLAG_UART_RCV;
+      }
+      else if (bitFlag & BFLAG_RD1)                                                                 //Process for Config 1 Value Read.
+      {
+
+      }
+      else
+      {
+          HAL_Delay(500);
+          HAL_GPIO_TogglePin(GPIOB, LD1_Pin|LD2_Pin|LD3_Pin);
+      }
   }
+
 }
 
 
@@ -272,7 +289,10 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *I2cHandle)
  }
 
 
+
 //================================= End Of Peripherals Callback ===================================//
+
+
 
 
 /*************************************************************************************
@@ -299,14 +319,134 @@ static uint16_t Buffercmp(uint8_t* pBuffer1, uint8_t* pBuffer2, uint16_t BufferL
 
 
 
+/*********************************************************************
+ * @name    : tinysh_dec
+ * @brief   : string to decimal conversion (up to 15 chars).
+ *********************************************************************/
+static unsigned long tinysh_dec(char *s)
+{
+  unsigned long res=0;
+  uint8_t index = 0;
+  int8_t min    = 1;
 
-/********************************************************
- *  Parsing incoming message                            *
- *  Example: {MSG:1,23,21009,45,67,-18,25}              *
- *           {RD1}
- ********************************************************/
+  while(*s)
+  {
+      //printf("%c\r\n",*s);
+
+      res*=10;
+
+      if((*s == '-')&&(index == 0))
+          min = -1;
+      else if((*s == '0')&&(index == 0))
+          res = 0;
+      else if(*s>='0' && *s<='9')
+          res+=*s-'0';
+      else
+          break;
+
+      s++;
+      index++;
+
+      if(index > 15)
+      {
+         break;
+      }
+  }
+
+  return (res * min);
+}
+
+
+/*********************************************************************
+ * @name    : updateBufferValue
+ * @brief   : Parsing receiving command from PC via UART
+ *********************************************************************/
+static void vUpdateBufferValue(char *input, char *pChar, char *pChar2, int32_t *pInt32)
+{
+    uint8_t u8_start    = 0;
+    uint8_t u8_stop     = 0;
+    uint8_t u8_cnt      = 0;
+
+    char str_res[150];
+
+    while (*pChar)
+    {
+        if(*pChar == ',')
+        {
+            memset(&str_res[0], 0, sizeof(str_res));
+            memcpy(&str_res[0], &pChar2[u8_stop], u8_start - u8_stop);
+            pInt32[u8_cnt] = tinysh_dec(&str_res[0]);
+            //printf("val: %s - %ld\r\n", &str_res[0], i32_res[u8_cnt]);
+
+            u8_stop = u8_start + 1;
+            u8_cnt++;
+        }
+        else if (*pChar == '}')
+        {
+            memset(&str_res[0], 0, sizeof(str_res));
+            memcpy(&str_res[0], &pChar2[u8_stop], u8_start - u8_stop);
+            pInt32[u8_cnt] = tinysh_dec(&str_res[0]);
+            //printf("val: %s - %ld\r\n", &str_res[0], i32_res[u8_cnt]);
+
+            u8_cnt++;
+            break;
+        }
+
+        pChar++;
+        u8_start++;
+    }
+}
+
+
+/*********************************************************************
+ * @name    : updateBufferByte
+ * @brief   : Parsing receiving command from PC via UART (in byte)
+ *********************************************************************/
+void vUpdateBufferByte(char *pChar, int32_t *pInt32, uint16_t u16_size)
+{
+    uint16_t u16_idx = 0;
+    uint16_t u16_int = 0;
+    uint8_t u8_headerNfooter = u16_size - (CFG_HEADER_CHARS_LEN + 1);
+    uint8_t u8_cf_idx = 0;
+
+    while (u16_idx < u8_headerNfooter)
+    {
+        pInt32[u16_int] = (pChar[u16_idx] << 24) | (pChar[u16_idx+1] << 16) |
+                            (pChar[u16_idx+2] << 8) | pChar[u16_idx+3];
+
+        u16_idx += 4;
+        u16_int += 1;
+
+        /* Change to CF2 or CF3 buffer */
+        if (u16_int >= 10)
+        {
+            if (u8_cf_idx == 0)
+            {
+                pInt32  = &i32_resCF2[0];
+                u16_int = 0;
+            }
+            else
+            {
+                pInt32  = &i32_resCF3[0];
+                u16_int = 0;
+            }
+
+            u8_cf_idx++;
+        }
+    }
+
+}
+
+
+/*********************************************************************
+ *  Parsing incoming message                                         *
+ *  Example: {MSG:1,23,21009,45,67,-18,25}                           *
+ *           {RD1}                                                   *
+ *********************************************************************/
 static void vShell_cmdParse(char *input, uint16_t u16_size)
 {
+    uint8_t u8cmd = 0;
+
     for(uint8_t u8_idx = 0; u8_idx < CFG_HEADER_NUM; u8_idx++)
     {
         if(!memcmp(input,(char*)&str_cfg_header[u8_idx][0], CFG_HEADER_CHARS_LEN))
@@ -321,21 +461,25 @@ static void vShell_cmdParse(char *input, uint16_t u16_size)
                 switch(u8_idx)
                 {
                     case CF1_HEADER:
+                        u8cmd = 1;
                         vUpdateBufferValue(input, pChar, pChar2, i32_resCF1);
                         bitFlag |= BFLAG_WR1;
                         break;
 
                     case CF2_HEADER:
+                        u8cmd = 1;
                         vUpdateBufferValue(input, pChar, pChar2, i32_resCF2);
                         bitFlag |= BFLAG_WR2;
                         break;
 
                     case CF3_HEADER:
+                        u8cmd = 1;
                         vUpdateBufferValue(input, pChar, pChar2, i32_resCF3);
                         bitFlag |= BFLAG_WR3;
                         break;
 
                     case CFA_HEADER:
+                        u8cmd = 1;
                         vUpdateBufferByte(pChar, i32_resCF1, u16_size);
                         break;
 
@@ -351,18 +495,22 @@ static void vShell_cmdParse(char *input, uint16_t u16_size)
                 switch(u8_idx)
                 {
                     case RD1_HEADER:
+                        u8cmd = 1;
                         bitFlag |= BFLAG_RD1;
                         break;
 
                     case RD2_HEADER:
+                        u8cmd = 1;
                         bitFlag |= BFLAG_RD2;
                         break;
 
                     case RD3_HEADER:
+                        u8cmd = 1;
                         bitFlag |= BFLAG_RD3;
                         break;
 
                     case RDALL_HEADER:
+                        u8cmd = 1;
                         bitFlag |= BFLAG_RDA;
                         break;
 
@@ -373,6 +521,12 @@ static void vShell_cmdParse(char *input, uint16_t u16_size)
         }
     }
 
+
+    if (u8cmd == 0)
+    {
+       printf("unknown CMD!!!\r\n");
+    }
+
 }
 
 
@@ -381,7 +535,7 @@ static void vShell_cmdParse(char *input, uint16_t u16_size)
 /*****************************************************************
  * @name    vuart_handle
  * @brief   handle afe uart data copy
- ****************************************************************/
+ *****************************************************************/
 static void vuart_handle(uint16_t Size)
 {
     uint16_t u16_numData;
@@ -420,7 +574,7 @@ static void vuart_handle(uint16_t Size)
            ((u8arr_uartEvent[u16_lenCnt - 1] == '\r')&&(u8arr_uartEvent[u16_lenCnt - 2]== '\n')))
         {
             bitFlag |= BFLAG_UART_RCV;
-            printf("S(%d): %s\r\n", Size, (char*)u8arr_uartEvent);
+            //printf("S(%d): %s\r\n", Size, (char*)u8arr_uartEvent);
         }
 
     }
@@ -429,6 +583,13 @@ static void vuart_handle(uint16_t Size)
     u16_oldPos = Size;
 }
 
+
+
+static void uartProcessing (uint8_t *u8p_buffer, uint16_t u16_size)
+{
+    //printf("UART RX(%d): %s\r\n", u16_size, (char*)u8p_buffer);
+    vShell_cmdParse((char*)u8p_buffer, u16_size);
+}
 
 
 /**
@@ -458,7 +619,7 @@ static void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLQ        = 7;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
@@ -472,7 +633,7 @@ static void SystemClock_Config(void)
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 }
 
@@ -495,7 +656,7 @@ static void MX_I2C1_Init(void)
   hi2c1.Init.NoStretchMode      = I2C_NOSTRETCH_DISABLE;
   if (HAL_I2C_Init(&hi2c1) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 
 }
@@ -521,7 +682,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CRCPolynomial  = 10;
   if (HAL_SPI_Init(&hspi1) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
   /* USER CODE BEGIN SPI1_Init 2 */
 
@@ -546,7 +707,7 @@ static void MX_USART3_UART_Init(void)
   huart3.Init.OverSampling  = UART_OVERSAMPLING_16;
   if (HAL_UART_Init(&huart3) != HAL_OK)
   {
-    Error_Handler();
+    Error_Handler(__FILE__, __LINE__);
   }
 
   HAL_UARTEx_ReceiveToIdle_DMA(&huart3, u8arr_eventBuff, UART_BUF_SZ);
@@ -638,16 +799,50 @@ static void MX_GPIO_Init(void)
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
-void Error_Handler(void)
+/************************************************************
+* @brief  This function is executed in case of error occurrence.
+* @retval None
+************************************************************/
+void Error_Handler(char * file, int line)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
-  /* USER CODE END Error_Handler_Debug */
+__disable_irq();
+printf("\r\nERROR: %s, line: %d \r\n",file,line);
+
+// Configurable Fault Status Register, Consists of MMSR, BFSR and UFSR
+volatile unsigned long  _CFSR = (*((volatile unsigned long *)(0xE000ED28)));
+printf("CFSR: %lu \r\n",_CFSR);
+
+
+// Hard Fault Status Register
+volatile unsigned long _HFSR = (*((volatile unsigned long *)(0xE000ED2C)));
+printf("HFSR: %lu \r\n",_HFSR);
+
+// Debug Fault Status Register
+volatile unsigned long _DFSR = (*((volatile unsigned long *)(0xE000ED30)));
+printf("DFSR: %lu \r\n",_DFSR);
+
+// Auxiliary Fault Status Register
+volatile unsigned long _AFSR = (*((volatile unsigned long *)(0xE000ED3C)));
+printf("AFSR: %lu \r\n",_AFSR);
+
+// Check BFARVALID/MMARVALID to see if they are valid values
+// MemManage Fault Address Register
+volatile unsigned long _MMAR = (*((volatile unsigned long *)(0xE000ED34)));
+printf("MMAR: %lu \r\n",_MMAR);
+
+// Bus Fault Address Register
+volatile unsigned long _BFAR = (*((volatile unsigned long *)(0xE000ED38)));
+printf("BFAR: %lu \r\n",_BFAR);
+
+//__asm("BKPT #0\n") ; // Break into the debugger
+
+while (1)
+{
+      HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+      HAL_Delay(100);
 }
+}
+
 
 #ifdef  USE_FULL_ASSERT
 /**

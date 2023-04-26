@@ -45,8 +45,7 @@ extern "C" {
 
 
 /* Exported functions prototypes ---------------------------------------------*/
-void Error_Handler(void);
-void uartProcessing (uint8_t *u8p_buffer, uint16_t u16_size);
+void Error_Handler(char * file, int line);
 
 
 /* Private defines -----------------------------------------------------------*/

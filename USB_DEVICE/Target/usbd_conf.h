@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2023 STMicroelectronics.
+  * Copyright (c) 2022 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -71,11 +71,15 @@
 /*---------- -----------*/
 #define USBD_DEBUG_LEVEL     0U
 /*---------- -----------*/
-#define USBD_LPM_ENABLED     0U
+#define USBD_LPM_ENABLED     1U
 /*---------- -----------*/
 #define USBD_SELF_POWERED     1U
 /*---------- -----------*/
-#define HID_FS_BINTERVAL     0xAU
+#define USBD_CUSTOMHID_OUTREPORT_BUF_SIZE     0x40
+/*---------- -----------*/
+#define USBD_CUSTOM_HID_REPORT_DESC_SIZE     33
+/*---------- -----------*/
+#define CUSTOM_HID_HS_BINTERVAL     0x5U
 
 /****************************************/
 /* #define for FS and HS identification */

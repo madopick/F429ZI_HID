@@ -32,60 +32,7 @@
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 uint8_t usbBuffer[0x40];
-/* USER CODE END PV */
 
-/** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
-  * @brief Usb device.
-  * @{
-  */
-
-/** @addtogroup USBD_CUSTOM_HID
-  * @{
-  */
-
-/** @defgroup USBD_CUSTOM_HID_Private_TypesDefinitions USBD_CUSTOM_HID_Private_TypesDefinitions
-  * @brief Private types.
-  * @{
-  */
-
-/* USER CODE BEGIN PRIVATE_TYPES */
-
-/* USER CODE END PRIVATE_TYPES */
-
-/**
-  * @}
-  */
-
-/** @defgroup USBD_CUSTOM_HID_Private_Defines USBD_CUSTOM_HID_Private_Defines
-  * @brief Private defines.
-  * @{
-  */
-
-/* USER CODE BEGIN PRIVATE_DEFINES */
-
-/* USER CODE END PRIVATE_DEFINES */
-
-/**
-  * @}
-  */
-
-/** @defgroup USBD_CUSTOM_HID_Private_Macros USBD_CUSTOM_HID_Private_Macros
-  * @brief Private macros.
-  * @{
-  */
-
-/* USER CODE BEGIN PRIVATE_MACRO */
-
-/* USER CODE END PRIVATE_MACRO */
-
-/**
-  * @}
-  */
-
-/** @defgroup USBD_CUSTOM_HID_Private_Variables USBD_CUSTOM_HID_Private_Variables
-  * @brief Private variables.
-  * @{
-  */
 
 /** Usb custom HID report descriptor. */
 __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DESC_SIZE] __ALIGN_END =
@@ -110,27 +57,11 @@ __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DES
     /* USER CODE END 0 */
     0xC0    /*     END_COLLECTION                */
 };
-/* USER CODE BEGIN PRIVATE_VARIABLES */
 
-/* USER CODE END PRIVATE_VARIABLES */
-
-/**
-  * @}
-  */
-
-/** @defgroup USBD_CUSTOM_HID_Exported_Variables USBD_CUSTOM_HID_Exported_Variables
-  * @brief Public variables.
-  * @{
-  */
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
-/* USER CODE BEGIN EXPORTED_VARIABLES */
 
-/* USER CODE END EXPORTED_VARIABLES */
-/**
-  * @}
-  */
 
 /** @defgroup USBD_CUSTOM_HID_Private_FunctionPrototypes USBD_CUSTOM_HID_Private_FunctionPrototypes
   * @brief Private functions declaration.
@@ -192,9 +123,7 @@ static int8_t CUSTOM_HID_Init_FS(void)
   */
 static int8_t CUSTOM_HID_DeInit_FS(void)
 {
-  /* USER CODE BEGIN 9 */
   return (USBD_OK);
-  /* USER CODE END 9 */
 }
 
 /**
@@ -205,53 +134,24 @@ static int8_t CUSTOM_HID_DeInit_FS(void)
   */
 static int8_t CUSTOM_HID_OutEvent_FS(uint8_t* state)
 {
-	//printf("USB In: %s\r\n", state);
-	//printf("%d - %d - %d - %d - %d\r\n\n", state[0], state[1], state[2], state[3], state[4] );
+	printf("USB In: %s\r\n", state);
+	printf("%d - %d - %d - %d - %d\r\n\n", state[0], state[1], state[2], state[3], state[4] );
 
 	memset(usbBuffer,0,0x40);
 
-	if (usbSendReq)
-	{
-		//strncpy(usbData, "12345",6);
+	//if (usbSendReq)
+	//{
+		strncpy(usbData, "12345\r\n",8);
 		usbBuffer[0] = strlen(usbData);
 		memcpy(&usbBuffer[1],usbData,usbBuffer[0]);
 		usbSendReq = 0;
-	}
+	//}
 
 	USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)usbBuffer,0x40);
 
 
   return (USBD_OK);
-  /* USER CODE END 10 */
 }
 
-/* USER CODE BEGIN 11 */
-/**
-  * @brief  Send the report to the Host
-  * @param  report: The report to be sent
-  * @param  len: The report length
-  * @retval USBD_OK if all operations are OK else USBD_FAIL
-  */
-/*
-static int8_t USBD_CUSTOM_HID_SendReport_HS(uint8_t *report, uint16_t len)
-{
-  return USBD_CUSTOM_HID_SendReport(&hUsbDeviceHS, report, len);
-}
-*/
-/* USER CODE END 11 */
 
-/* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
-
-/* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
 

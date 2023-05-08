@@ -74,8 +74,8 @@ PUTCHAR_PROTOTYPE
 /**********************************************************
  * PARSING HEADER, Used in FW CONFIG - READ/WRITE Process
  **********************************************************/
-#define CFG_LENGTH              10
-#define CFG_HEADER_NUM          10
+#define CFG_LENGTH              10          //Byte length.
+#define CFG_HEADER_NUM          10          //Recognize command length.
 #define CFG_HEADER_CHARS_LEN    5           //num of char for header
 #define CFG_HEADER_READ         5           //Max index for write, above this index is read command.
 #define STRLENMAX               256
@@ -83,15 +83,15 @@ PUTCHAR_PROTOTYPE
 static char str_cfg_header[CFG_HEADER_NUM][CFG_HEADER_CHARS_LEN] =
 {
     "{MSG:",
-    "{CF1:",
-    "{CF2:",
-    "{CF3:",
-    "{CFA:",
-    "{RD1}",
-    "{RD2}",
-    "{RD3}",
-    "{RD4}",
-    "{RDA}"
+    "{CF1:",        //Write CMD Group 1.
+    "{CF2:",        //Write CMD Group 2.
+    "{CFA:",        //Write CMD ALL.
+    "{USB:",        //Write CMD USB Out Buffer.
+    "{RD1}",        //Read CMD Group 1.
+    "{RD2}",        //Read CMD Group 2.
+    "{RD3}",        //Read CMD Group 3.
+    "{RD4}",        //Read CMD Group 4.
+    "{RDA}",        //Read CMD ALL.
 };
 
 
@@ -99,6 +99,7 @@ static char str_cfg_header[CFG_HEADER_NUM][CFG_HEADER_CHARS_LEN] =
 static int32_t i32_resCF1[CFG_LENGTH] = {10,256,512,37,10,-45,123,46,-78,89};
 static int32_t i32_resCF2[CFG_LENGTH] = {20,156,52,-37,20,145,367,46,-12,19};
 static int32_t i32_resCF3[CFG_LENGTH] = {35,16,2022,-457,560,15,97,46,12,-67};
+static uint8_t u8_usbBuffer[CFG_LENGTH];
 
 
 static uint8_t u8arr_eventBuff[UART_BUF_SZ];
@@ -153,6 +154,11 @@ int main(void)
       else if (bitFlag & BFLAG_RD1)                                                                 //Process for Config 1 Value Read.
       {
 
+      }
+      else if (bitFlag & BFLAG_USB)                                                                 //Process for Change USB Out buffer.
+      {
+          printf("USB Out buffer changed\r\n");
+          bitFlag   &= ~BFLAG_USB;
       }
       else
       {
@@ -442,6 +448,7 @@ void vUpdateBufferByte(char *pChar, int32_t *pInt32, uint16_t u16_size)
 /*********************************************************************
  *  Parsing incoming message                                         *
  *  Example: {MSG:1,23,21009,45,67,-18,25}                           *
+ *           {USB:5,10,45}                                           *
  *           {RD1}                                                   *
  *********************************************************************/
 static void vShell_cmdParse(char *input, uint16_t u16_size)
@@ -473,16 +480,29 @@ static void vShell_cmdParse(char *input, uint16_t u16_size)
                         bitFlag |= BFLAG_WR2;
                         break;
 
-                    case CF3_HEADER:
-                        u8cmd = 1;
-                        vUpdateBufferValue(input, pChar, pChar2, i32_resCF3);
-                        bitFlag |= BFLAG_WR3;
-                        break;
-
                     case CFA_HEADER:
                         u8cmd = 1;
                         vUpdateBufferByte(pChar, i32_resCF1, u16_size);
                         break;
+
+                    case USB_OUT_HEADER:
+                       u8cmd = 1;
+                       memset(i32_resCF3, 0, CFG_LENGTH*(sizeof(i32_resCF3[0])));
+                       vUpdateBufferValue(input, pChar, pChar2, i32_resCF3);
+                       printf("USB Out: %ld - %ld - %ld - %ld - %ld - %ld - %ld - %ld - %ld - %ld\r\n",
+                               i32_resCF3[0], i32_resCF3[1], i32_resCF3[2], i32_resCF3[3], i32_resCF3[4],
+                               i32_resCF3[5], i32_resCF3[6], i32_resCF3[7], i32_resCF3[8], i32_resCF3[9]);
+
+                       memset(u8_usbBuffer, 0, CFG_LENGTH);
+
+                       for (uint8_t idx = 0; idx < CFG_LENGTH; idx++)
+                       {
+                           u8_usbBuffer[idx] = (uint8_t)i32_resCF3[idx];
+                       }
+
+                       sendbytesViausb(u8_usbBuffer);
+                       bitFlag |= BFLAG_USB;
+                       break;
 
                     default:
                         break;

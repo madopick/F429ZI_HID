@@ -38,9 +38,9 @@ uint8_t usbBuffer[0x40];
 __ALIGN_BEGIN static uint8_t CUSTOM_HID_ReportDesc_FS[USBD_CUSTOM_HID_REPORT_DESC_SIZE] __ALIGN_END =
 {
     /* USER CODE BEGIN 0 */
-    0x06, 0x00, 0xff,              // Usage Page(Undefined )
-    0x09, 0x01,                    // USAGE (Undefined)
-    0xa1, 0x01,                    // COLLECTION (Application)
+    0x06, 0x00, 0xff,              //   Usage Page(Undefined )
+    0x09, 0x01,                    //   USAGE (Undefined)
+    0xa1, 0x01,                    //   COLLECTION (Application)
     0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
     0x26, 0xff, 0x00,              //   LOGICAL_MAXIMUM (255)
     0x75, 0x08,                    //   REPORT_SIZE (8)
@@ -90,19 +90,18 @@ static uint8_t usbSendReq = 0;
 
 void sendbytesViausb(uint8_t* data)
 {
-	memset(usbData, 0, strlen(usbData));
+#if 0
+    memset(usbData, 0, strlen(usbData));
 	sprintf(usbData,"%d-%d-%d-%d-%d-%d-%d-%d",
 			data[0], data[1], data[2], data[3],
 			data[4], data[5], data[6], data[7]);
+#endif
+
+	memcpy(usbData, data, 10);
 
 	usbSendReq = 1;
 }
 
-
-/** @defgroup USBD_CUSTOM_HID_Private_Functions USBD_CUSTOM_HID_Private_Functions
-  * @brief Private functions.
-  * @{
-  */
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -112,9 +111,7 @@ void sendbytesViausb(uint8_t* data)
   */
 static int8_t CUSTOM_HID_Init_FS(void)
 {
-  /* USER CODE BEGIN 8 */
   return (USBD_OK);
-  /* USER CODE END 8 */
 }
 
 /**
@@ -137,20 +134,16 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t* state)
 	printf("USB In: %s\r\n", state);
 	printf("%d - %d - %d - %d - %d\r\n\n", state[0], state[1], state[2], state[3], state[4] );
 
-	memset(usbBuffer,0,0x40);
+	memset(usbBuffer,0,0x40);       //Set send buffer out length to 64 bytes.
 
-	//if (usbSendReq)
-	//{
-		strncpy(usbData, "12345\r\n",8);
-		usbBuffer[0] = strlen(usbData);
-		memcpy(&usbBuffer[1],usbData,usbBuffer[0]);
-		usbSendReq = 0;
-	//}
+	usbBuffer[0] = 10;
+	memcpy(&usbBuffer[1],usbData,usbBuffer[0]);
+	usbSendReq = 0;
 
 	USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS,(uint8_t*)usbBuffer,0x40);
 
 
-  return (USBD_OK);
+	return (USBD_OK);
 }
 
 

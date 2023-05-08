@@ -23,96 +23,26 @@
 #include "usbd_desc.h"
 #include "usbd_conf.h"
 
-/* USER CODE BEGIN INCLUDE */
-
-/* USER CODE END INCLUDE */
-
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
-/* USER CODE END PV */
 
-/** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
-  * @{
-  */
+#define USBD_VID                        1155
+#define USBD_LANGID_STRING              1033
+#define USBD_MANUFACTURER_STRING        "STMicroelectronics"
+#define USBD_PID_FS                     22352
+#define USBD_PRODUCT_STRING_FS          "STM32 Custom Human interface"
+#define USBD_CONFIGURATION_STRING_FS    "Custom HID Config"
+#define USBD_INTERFACE_STRING_FS        "Custom HID Interface"
+#define USB_SIZ_BOS_DESC                0x0C
 
-/** @addtogroup USBD_DESC
-  * @{
-  */
-
-/** @defgroup USBD_DESC_Private_TypesDefinitions USBD_DESC_Private_TypesDefinitions
-  * @brief Private types.
-  * @{
-  */
-
-/* USER CODE BEGIN PRIVATE_TYPES */
-
-/* USER CODE END PRIVATE_TYPES */
-
-/**
-  * @}
-  */
-
-/** @defgroup USBD_DESC_Private_Defines USBD_DESC_Private_Defines
-  * @brief Private defines.
-  * @{
-  */
-
-#define USBD_VID     1155
-#define USBD_LANGID_STRING     1033
-#define USBD_MANUFACTURER_STRING     "STMicroelectronics"
-#define USBD_PID_FS     22352
-#define USBD_PRODUCT_STRING_FS     "STM32 Custom Human interface"
-#define USBD_CONFIGURATION_STRING_FS     "Custom HID Config"
-#define USBD_INTERFACE_STRING_FS     "Custom HID Interface"
-
-#define USB_SIZ_BOS_DESC            0x0C
-
-/* USER CODE BEGIN PRIVATE_DEFINES */
-
-/* USER CODE END PRIVATE_DEFINES */
-
-/**
-  * @}
-  */
-
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
-/** @defgroup USBD_DESC_Private_Macros USBD_DESC_Private_Macros
-  * @brief Private macros.
-  * @{
-  */
-
-/* USER CODE BEGIN PRIVATE_MACRO */
-
-/* USER CODE END PRIVATE_MACRO */
-
-/**
-  * @}
-  */
-
-/** @defgroup USBD_DESC_Private_FunctionPrototypes USBD_DESC_Private_FunctionPrototypes
-  * @brief Private functions declaration.
-  * @{
-  */
 
 static void Get_SerialNum(void);
 static void IntToUnicode(uint32_t value, uint8_t * pbuf, uint8_t len);
 
-/**
-  * @}
-  */
 
-/** @defgroup USBD_DESC_Private_FunctionPrototypes USBD_DESC_Private_FunctionPrototypes
-  * @brief Private functions declaration for FS.
-  * @{
-  */
 
 uint8_t * USBD_FS_DeviceDescriptor(USBD_SpeedTypeDef speed, uint16_t *length);
 uint8_t * USBD_FS_LangIDStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length);
@@ -125,14 +55,6 @@ uint8_t * USBD_FS_InterfaceStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *leng
 uint8_t * USBD_FS_USR_BOSDescriptor(USBD_SpeedTypeDef speed, uint16_t *length);
 #endif /* (USBD_LPM_ENABLED == 1) */
 
-/**
-  * @}
-  */
-
-/** @defgroup USBD_DESC_Private_Variables USBD_DESC_Private_Variables
-  * @brief Private variables.
-  * @{
-  */
 
 USBD_DescriptorsTypeDef FS_Desc =
 {
@@ -204,9 +126,7 @@ __ALIGN_BEGIN uint8_t USBD_FS_BOSDesc[USB_SIZ_BOS_DESC] __ALIGN_END =
 };
 #endif /* (USBD_LPM_ENABLED == 1) */
 
-/**
-  * @}
-  */
+
 
 /** @defgroup USBD_DESC_Private_Variables USBD_DESC_Private_Variables
   * @brief Private variables.
@@ -240,14 +160,7 @@ __ALIGN_BEGIN uint8_t USBD_StringSerial[USB_SIZ_STRING_SERIAL] __ALIGN_END = {
   USB_DESC_TYPE_STRING,
 };
 
-/**
-  * @}
-  */
 
-/** @defgroup USBD_DESC_Private_Functions USBD_DESC_Private_Functions
-  * @brief Private functions.
-  * @{
-  */
 
 /**
   * @brief  Return the device descriptor
@@ -429,15 +342,5 @@ static void IntToUnicode(uint32_t value, uint8_t * pbuf, uint8_t len)
     pbuf[2 * idx + 1] = 0;
   }
 }
-/**
-  * @}
-  */
 
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
 

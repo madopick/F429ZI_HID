@@ -66,7 +66,7 @@ void Error_Handler(char * file, int line);
 #define BFLAG_WR2                                   (1 << 10)
 #define BFLAG_WR3                                   (1 << 11)
 #define BFLAG_RDA                                   (1 << 12)
-#define BFLAG_BUFFCOM                               (1 << 13)
+#define BFLAG_USB                                   (1 << 13)
 #define BFLAG_SPI_SLAVE_WR                          (1 << 14)
 #define BFLAG_SPI_SLAVE_RD                          (1 << 15)
 
@@ -78,8 +78,8 @@ typedef enum
     MSG_HEADER = 0,
     CF1_HEADER,
     CF2_HEADER,
-    CF3_HEADER,
     CFA_HEADER,
+    USB_OUT_HEADER,
     RD1_HEADER,
     RD2_HEADER,
     RD3_HEADER,
